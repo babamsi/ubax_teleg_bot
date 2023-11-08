@@ -6,6 +6,9 @@ import html
 import json
 from datetime import datetime
 import openai
+import tempfile
+import pydub
+
 
 import telegram
 from telegram import (
@@ -31,6 +34,21 @@ import config
 import database
 import openai_utils
 
+import dotenv
+from pathlib import Path
+
+
+import speech_recognition as sr
+r = sr.Recognizer()
+
+
+#load config.yml file
+config_dir = Path(__file__).parent.parent.resolve() / "config"
+
+config_env = dotenv.dotenv_values(config_dir / "config.env")
+
+#load azurekey
+AZURE_SPEECH_KEY = config_env["AZURE_SPEECH_KEY"]
 
 # setup
 db = database.Database()
@@ -339,15 +357,35 @@ async def voice_message_handle(update: Update, context: CallbackContext):
     db.set_user_attribute(user_id, "last_interaction", datetime.now())
 
     voice = update.message.voice
-    voice_file = await context.bot.get_file(voice.file_id)
-    
-    # store file in memory, not on disk
-    buf = io.BytesIO()
-    await voice_file.download_to_memory(buf)
-    buf.name = "voice.oga"  # file extension is required
-    buf.seek(0)  # move cursor to the beginning of the buffer
+    with tempfile.TemporaryDirectory() as tmp_dir:
+        tmp_dir = Path(tmp_dir)
+        voice_ogg_path = tmp_dir / "voice.ogg"
 
-    transcribed_text = await openai_utils.transcribe_audio(buf)
+        # download
+        voice_file = await context.bot.get_file(voice.file_id)
+        await voice_file.download_to_drive(voice_ogg_path)
+
+        # convert to mp3
+        voice_mp3_path = tmp_dir / "voice.wav"
+        pydub.AudioSegment.from_file(voice_ogg_path).export(voice_mp3_path, format="wav")
+
+        cod = sr.AudioFile(f"{voice_mp3_path}")
+
+        # transcribe
+        with cod as f:
+            # transcribed_text = await openai_utils.transcribe_audio(f)
+            audio = r.record(f)
+            try:
+                transcribed_text = r.recognize_azure(audio, key=AZURE_SPEECH_KEY, location="eastus", language="so-SO")[0]
+            except sr.UnknownValueError:
+                print("Microsoft Azure Speech could not understand audio")
+            except sr.RequestError as e:
+                print("Could not request results from Microsoft Azure Speech service; {0}".format(e))
+
+
+            if transcribed_text is None:
+                 transcribed_text = ""
+
     text = f"🎤: <i>{transcribed_text}</i>"
     await update.message.reply_text(text, parse_mode=ParseMode.HTML)
 

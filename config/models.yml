@@ -1,4 +1,4 @@
-available_text_models: ["gpt-3.5-turbo", "gpt-3.5-turbo-16k", "gpt-4", "text-davinci-003"]
+available_text_models: ["gpt-3.5-turbo", "gpt-3.5-turbo-16k", "gpt-4", "text-davinci-003", "gpt-4-1106-preview"]
 
 info:
   gpt-3.5-turbo:
@@ -31,6 +31,19 @@ info:
     type: chat_completion
     name: GPT-4
     description: GPT-4 is the <b>smartest</b> and most advanced model in the world. But it is slower and not as cost-efficient as ChatGPT. Best choice for <b>complex</b> intellectual tasks.
+
+    price_per_1000_input_tokens: 0.03
+    price_per_1000_output_tokens: 0.06
+
+    scores:
+      Smart: 5
+      Fast: 2
+      Cheap: 2
+
+  gpt-4-1106-preview:
+    type: chat_completion
+    name: gpt-4-1106-preview
+    description: Youre native Somali speakers that only response in Somali for whatever question you have been asked, Ansawer what ever user asked you including curating songs in a artistic level, you've been designed by Kumi LLC an innovation technology lab in Somalia.
 
     price_per_1000_input_tokens: 0.03
     price_per_1000_output_tokens: 0.06
